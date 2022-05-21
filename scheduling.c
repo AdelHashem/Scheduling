@@ -22,7 +22,7 @@ int size;
 int IsEmpty(Queue*q);
 void CreateQueue(Queue *q);
 Qnode* NewNode(int ndata,int prio);
-void QueueIn(Queue* q ,int ndata,int cpu,int io,int pri);
+void QueueIn(Queue* q ,int ndata,int cpu,int io,int pri,int time);
 int priorityOut(Queue *q);
 int QueueOut(Queue*q);
 ///////////////////////////////////////
@@ -33,11 +33,11 @@ void LoadFile(char *path);
 void Getdata();
 void FCFS();
 void output(int cycle,Queue *running,Queue *ready,Queue *blocked);
+void trtime();
 
 FILE *f;
 Queue data;
-int tr[3];
-
+int *tr;
 int main()
 {
     char path[512] = "";
@@ -56,7 +56,9 @@ int main()
 
     if (f = fopen(path,"r")){
         Getdata();
+        tr =(int*) malloc(data.size * sizeof(int));
         FCFS();
+        trtime();
 
     }else
         printf("File Not Exist");
@@ -79,7 +81,7 @@ void Getdata()
     int p,cpu,io,arrive; //
     while(!feof(f)){
     fscanf(f, "%d %d %d %d",&p,&cpu,&io,&arrive);
-    QueueIn(&data,p,cpu,io,arrive);
+    QueueIn(&data,p,cpu,io,arrive,arrive);
     }
 }
 
@@ -88,7 +90,7 @@ void FCFS()
     Queue ready,blocked,running; // create 3 Qs
     CreateQueue(&ready);CreateQueue(&blocked);CreateQueue(&running);
     int cycle = 0; //start with cycle 0
-    int P_time = -1;
+    int P_time = -1,n_P = data.size;
     int flag = 0;
     int temp;
     while (flag == 0 )
@@ -98,7 +100,7 @@ void FCFS()
         // push p when its time comes
         while(!IsEmpty(&data) && priorityOut(&data) == cycle)
         {
-            QueueIn(&ready,data.top->data,data.top->cpu,data.top->io,0);
+            QueueIn(&ready,data.top->data,data.top->cpu,data.top->io,0,data.top->time);
             temp = QueueOut(&data);
         }
         // Process the blocking Q
@@ -111,14 +113,14 @@ void FCFS()
         }
         while(!IsEmpty(&blocked) && priorityOut(&blocked) == 0)
         {
-            QueueIn(&ready,blocked.top->data,blocked.top->cpu,-1,0);
+            QueueIn(&ready,blocked.top->data,blocked.top->cpu,-1,0,blocked.top->time);
             temp = QueueOut(&blocked);
         }
         ////////
 
         // Deal with running P
         if(!IsEmpty(&ready) && IsEmpty(&running)){
-            QueueIn(&running,ready.top->data,ready.top->cpu,ready.top->io,0);
+            QueueIn(&running,ready.top->data,ready.top->cpu,ready.top->io,0,ready.top->time);
             temp = QueueOut(&ready);
             P_time = 0;}
         else if(!IsEmpty(&running))
@@ -128,14 +130,15 @@ void FCFS()
             {
                 if(running.top->io == -1) //no i/o
                 {
+                    tr[running.top->data] = cycle - running.top->time;
                     temp = QueueOut(&running);
                 }else //i/o blocking
                 {
-                    QueueIn(&blocked,running.top->data,running.top->cpu,running.top->io,running.top->io);
+                    QueueIn(&blocked,running.top->data,running.top->cpu,running.top->io,running.top->io,running.top->time);
                     temp = QueueOut(&running);
                 }
                 if(!IsEmpty(&ready))
-                    {QueueIn(&running,ready.top->data,ready.top->cpu,ready.top->io,0);
+                    {QueueIn(&running,ready.top->data,ready.top->cpu,ready.top->io,0,ready.top->time);
                      temp = QueueOut(&ready);}
                 P_time = 0;               
             }
@@ -175,6 +178,16 @@ void output(int cycle,Queue *running,Queue *ready,Queue *blocked)
     fclose(fc);
 
 }
+void trtime()
+{
+    FILE *fp = fopen("ouputFCFS.txt","a");
+    fprintf(fp,"\n");
+    int n =sizeof(tr)/sizeof(int);
+    for(int i = 0; i <= n;i++)
+        fprintf(fp,"Turnaround time of Process %d: %d\n",i,tr[i]);
+    fprintf(fp,"\n");
+    fclose(fp);
+}
 
 
 
@@ -200,13 +213,14 @@ Qnode* NewNode(int ndata,int prio)
 }
 
 
-void QueueIn(Queue* q ,int ndata,int cpu,int io,int pri)
+void QueueIn(Queue* q ,int ndata,int cpu,int io,int pri,int time)
 {
 Qnode *newn = (Qnode*)malloc(sizeof(Qnode));
 newn->data = ndata;
 newn->priority = pri;
 newn->cpu = cpu;
 newn->io = io;
+newn->time = time;
 newn->next=NULL;
 
 if (IsEmpty(q))
