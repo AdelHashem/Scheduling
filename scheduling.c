@@ -32,6 +32,7 @@ int QueueOut(Queue*q);
 void LoadFile(char *path);
 void Getdata();
 void FCFS();
+void RR(int quantum);
 void output(int cycle,Queue *running,Queue *ready,Queue *blocked);
 void trtime();
 
@@ -43,13 +44,14 @@ int main()
     char path[512] = "";
     
     int detector;
+    int quantum;
     scanf("%d",&detector);
     // see if it fcfs or RR
     if (detector == 0)//fcfs
     {
         LoadFile(path);
     }else{ //RR
-        int quantum;
+        
         scanf("%d",&quantum);
         LoadFile(path);
     }
@@ -57,7 +59,10 @@ int main()
     if (f = fopen(path,"r")){
         Getdata();
         tr =(int*) malloc(data.size * sizeof(int));
-        FCFS();
+        if (detector == 0)
+            FCFS();
+        else
+            RR(quantum);
         trtime();
 
     }else
@@ -142,7 +147,22 @@ void FCFS()
                      temp = QueueOut(&ready);}
                 P_time = 0;               
             }
+            if(running.top->cpu == 0)
+            {
+                tempn = blocked.top;
+                for(int i = 0;i< blocked.size;i++)
+                {
+                    tempn->io ++;
+                    tempn->priority ++;
+                    tempn = tempn->next;
+                }
+                P_time = -1;
+                
+                continue;
+            }
+
         }
+   
         output(cycle,&running,&ready,&blocked);
         if(!IsEmpty(&running))
             printf("%d cycle :%d ",running.top->data,cycle);
@@ -155,6 +175,124 @@ void FCFS()
     }
     
 }
+
+void RR(int quantum)
+{
+    int p_time[data.size];
+    memset(p_time, 0, sizeof(p_time));
+    Queue ready,blocked,running; // create 3 Qs
+    CreateQueue(&ready);CreateQueue(&blocked);CreateQueue(&running);
+    int cycle = 0,counter = 0; //start with cycle 0
+    int n_P = data.size;
+    int flag = 0;
+    int temp;
+    while (flag == 0 )
+    {
+        counter = 0;
+        while (counter < quantum)
+        {
+            // push p when its time comes
+        while(!IsEmpty(&data) && priorityOut(&data) == cycle)
+        {
+            QueueIn(&ready,data.top->data,data.top->cpu,data.top->io,0,data.top->time);
+            temp = QueueOut(&data);
+        }
+        // Process the blocking Q
+        Qnode *tempn = blocked.top;
+        for(int i = 0;i< blocked.size;i++)
+        {
+            tempn->io --;
+            tempn->priority --;
+            tempn = tempn->next;
+        }
+        while(!IsEmpty(&blocked) && priorityOut(&blocked) == 0)
+        {
+            QueueIn(&ready,blocked.top->data,blocked.top->cpu,-1,0,blocked.top->time);
+            temp = QueueOut(&blocked);
+        }
+        ////////
+
+        // for running
+
+            if(!IsEmpty(&ready) && IsEmpty(&running)){
+            QueueIn(&running,ready.top->data,ready.top->cpu,ready.top->io,0,ready.top->time);
+            temp = QueueOut(&ready);
+            }
+        else if(!IsEmpty(&running))
+        {
+            //see if the p ended
+            if(running.top->cpu == p_time[running.top->data])
+            {
+                if(running.top->io == -1) //no i/o
+                {
+                    tr[running.top->data] = cycle - running.top->time;
+                    temp = QueueOut(&running);
+                }else //i/o blocking
+                {
+                    QueueIn(&blocked,running.top->data,running.top->cpu,running.top->io,running.top->io,running.top->time);
+                    p_time[running.top->data] = 0;
+                    temp = QueueOut(&running);
+                }
+                if(!IsEmpty(&ready))
+                    {QueueIn(&running,ready.top->data,ready.top->cpu,ready.top->io,0,ready.top->time);
+                    counter = 0;
+                     temp = QueueOut(&ready);}
+                               
+            }
+            if(running.top->cpu == 0)
+            {   
+                
+                continue;
+            }
+
+        }
+        if(data.size == 0 && IsEmpty(&ready) && IsEmpty(&running) && IsEmpty(&blocked)){
+            flag = 1;
+        }
+            if(!IsEmpty(&running)){
+                p_time[running.top->data] ++;
+                printf("cycle : %d Runing : %d\n",cycle,running.top->data);
+            }
+            output(cycle,&running,&ready,&blocked);
+                
+            counter ++;
+            cycle ++;
+            
+        }
+     
+
+
+        if(!IsEmpty(&running)){
+            //if The P ended at the end of quan
+            
+            if(running.top->cpu == p_time[running.top->data])
+            {
+                if(running.top->io == -1) //no i/o
+                {
+                    tr[running.top->data] = cycle - running.top->time;
+                    temp = QueueOut(&running);
+                }else //i/o blocking
+                {
+                    QueueIn(&blocked,running.top->data,running.top->cpu,running.top->io + 1,running.top->io + 1,running.top->time);
+                    p_time[running.top->data] = 0;
+                    temp = QueueOut(&running);
+                }
+            }
+            else{
+                QueueIn(&ready,running.top->data,running.top->cpu,running.top->io,0,running.top->time);
+                temp = QueueOut(&running);
+            }
+
+                
+            
+        }
+
+    }
+}
+
+
+
+
 
 void output(int cycle,Queue *running,Queue *ready,Queue *blocked)
 {
