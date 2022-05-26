@@ -33,7 +33,7 @@ void LoadFile(char *path);
 void Getdata();
 void FCFS();
 void RR(int quantum);
-void output(int cycle,Queue *running,Queue *ready,Queue *blocked);
+void output(int cycle,Queue *running,Queue *ready,Queue *blocked,int type);
 void trtime();
 
 FILE *f;
@@ -61,10 +61,19 @@ int main()
         tr =(int*) malloc(data.size * sizeof(int));
         Queue temp = data;
         if (detector == 0)
+        {
             FCFS();
+            trtime(0);
+        }
+            
         else
+        {
             RR(quantum);
-        trtime();
+            trtime(1);
+        }
+            
+
+        
 
     }else
         printf("File Not Exist");
@@ -165,15 +174,15 @@ void FCFS()
             }
 
         }
-   
-        output(cycle,&running,&ready,&blocked);
+        if(data.size == 0 && IsEmpty(&ready) && IsEmpty(&running) && IsEmpty(&blocked)){
+            flag = 1;
+        }
+        output(cycle,&running,&ready,&blocked,0);
         if(!IsEmpty(&running))
             printf("%d cycle :%d ",running.top->data,cycle);
 
         cycle ++;
-        if(data.size == 0 && IsEmpty(&ready) && IsEmpty(&running) && IsEmpty(&blocked)){
-            flag = 1;
-        }
+        
             
     }
     
@@ -189,6 +198,7 @@ void RR(int quantum)
     int n_P = data.size;
     int flag = 0;
     int temp;
+    int i = 0;
     while (flag == 0 )
     {
         counter = 0;
@@ -242,6 +252,23 @@ void RR(int quantum)
                      temp = QueueOut(&ready);}
                                
             }
+
+            if(!IsEmpty(&running) && running.top->cpu == 0)
+            {
+                tempn = blocked.top;
+                for(int i = 0;i< blocked.size;i++)
+                {
+                    tempn->io ++;
+                    tempn->priority ++;
+                    tempn = tempn->next;
+                }
+                p_time[running.top->data] = 0;
+                
+                continue;
+            }
+
+
+
             //if(running.top->cpu == 0)
             //{   
                 
@@ -256,7 +283,7 @@ void RR(int quantum)
                 p_time[running.top->data] ++;
                 printf("cycle : %d Runing : %d\n",cycle,running.top->data);
             }
-            output(cycle,&running,&ready,&blocked);
+            output(cycle,&running,&ready,&blocked,1);
                 
             counter ++;
             cycle ++;
@@ -282,8 +309,14 @@ void RR(int quantum)
                 }
             }
             else{
-                QueueIn(&ready,running.top->data,running.top->cpu,running.top->io,0,running.top->time);
+                if (!IsEmpty(&ready))
+                {
+                    QueueIn(&running,ready.top->data,ready.top->cpu,ready.top->io,i,ready.top->time);
+                    temp = QueueOut(&ready);
+                }               
+                QueueIn(&ready,running.top->data,running.top->cpu,running.top->io,i,running.top->time);
                 temp = QueueOut(&running);
+                i++;
             }
 
                 
@@ -297,9 +330,13 @@ void RR(int quantum)
 
 
 
-void output(int cycle,Queue *running,Queue *ready,Queue *blocked)
+void output(int cycle,Queue *running,Queue *ready,Queue *blocked,int type)
 {
-    FILE *fc = fopen("ouputFCFS.txt","a");
+    FILE *fc;
+    if (type == 0)
+         fc = fopen("ouputFCFS.txt","a");
+    else
+         fc= fopen("ouputRR.txt","a");
     fprintf(fc,"%d ",cycle);
     if(running->size == 1)
         {fprintf(fc,"%d:Running ",running->top->data);}
@@ -319,9 +356,14 @@ void output(int cycle,Queue *running,Queue *ready,Queue *blocked)
     fclose(fc);
 
 }
-void trtime()
+void trtime(int type)
 {
-    FILE *fp = fopen("ouputFCFS.txt","a");
+    FILE *fp;
+    if (type == 0)
+         fp = fopen("ouputFCFS.txt","a");
+    else
+         fp= fopen("ouputRR.txt","a");
+    
     fprintf(fp,"\n");
     int n =sizeof(tr)/sizeof(int);
     for(int i = 0; i <= n;i++)
