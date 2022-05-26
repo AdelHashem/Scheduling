@@ -39,7 +39,8 @@ void trtime();
 FILE *f;
 Queue data;
 int *tr;
-int datasize;
+int datasize,cputime,finish;
+void Getcputime();
 int main()
 {
     char path[512] = "";
@@ -61,6 +62,7 @@ int main()
         Getdata();
         tr =(int*) malloc(data.size * sizeof(int));
         datasize = data.size;
+        Getcputime();
         Queue temp = data;
         if (detector == 0)
         {
@@ -82,6 +84,19 @@ int main()
 
     return 0;
 }
+
+void Getcputime()
+{
+    cputime = 0;
+    Qnode *temp = data.top;
+    while(temp)
+    {
+        cputime += temp->cpu;
+        temp = temp->next;
+    }
+    cputime *=2;
+}
+
 
 void LoadFile(char *path)
 {
@@ -178,6 +193,8 @@ void FCFS()
         }
         if(data.size == 0 && IsEmpty(&ready) && IsEmpty(&running) && IsEmpty(&blocked)){
             flag = 1;
+            finish = cycle;
+            break;
         }
         output(cycle,&running,&ready,&blocked,0);
         if(!IsEmpty(&running))
@@ -269,17 +286,11 @@ void RR(int quantum)
                 continue;
             }
 
-
-
-            //if(running.top->cpu == 0)
-            //{   
-                
-                //continue;
-            //}
-
         }
         if(data.size == 0 && IsEmpty(&ready) && IsEmpty(&running) && IsEmpty(&blocked)){
             flag = 1;
+            finish = cycle;
+            break;
         }
             if(!IsEmpty(&running)){
                 p_time[running.top->data] ++;
@@ -365,7 +376,9 @@ void trtime(int type)
          fp = fopen("ouputFCFS.txt","a");
     else
          fp= fopen("ouputRR.txt","a");
-    
+    fprintf(fp,"\n");
+    fprintf(fp,"Finishing time: %d\n",--finish);
+    fprintf(fp,"CPU Utilization: %.2f\n",(float)cputime/(float)++finish);
     fprintf(fp,"\n");
     for(int i = 0; i < datasize;i++)
         fprintf(fp,"Turnaround time of Process %d: %d\n",i,tr[i]);
