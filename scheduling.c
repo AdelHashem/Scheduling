@@ -59,6 +59,7 @@ int main()
     if (f = fopen(path,"r")){
         Getdata();
         tr =(int*) malloc(data.size * sizeof(int));
+        Queue temp = data;
         if (detector == 0)
             FCFS();
         else
@@ -102,11 +103,13 @@ void FCFS()
     { 
        
         P_time ++;
+        Queue temoq = data;
         // push p when its time comes
         while(!IsEmpty(&data) && priorityOut(&data) == cycle)
         {
             QueueIn(&ready,data.top->data,data.top->cpu,data.top->io,0,data.top->time);
             temp = QueueOut(&data);
+            temoq = data;
         }
         // Process the blocking Q
         Qnode *tempn = blocked.top;
@@ -380,10 +383,7 @@ while(temp->next != NULL && pri > temp->next->priority)
 {
 temp=temp->next;
 
-}
-if (temp->next !=NULL  &&temp->priority == pri && temp->next->data < ndata)
-    temp=temp->next;
-
+}0
 newn->next = temp->next;
 temp->next =newn;
 q->size++;
