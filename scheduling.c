@@ -383,7 +383,7 @@ while(temp->next != NULL && pri > temp->next->priority)
 {
 temp=temp->next;
 
-}0
+}
 newn->next = temp->next;
 temp->next =newn;
 q->size++;
