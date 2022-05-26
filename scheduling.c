@@ -39,6 +39,7 @@ void trtime();
 FILE *f;
 Queue data;
 int *tr;
+int datasize;
 int main()
 {
     char path[512] = "";
@@ -59,6 +60,7 @@ int main()
     if (f = fopen(path,"r")){
         Getdata();
         tr =(int*) malloc(data.size * sizeof(int));
+        datasize = data.size;
         Queue temp = data;
         if (detector == 0)
         {
@@ -365,8 +367,7 @@ void trtime(int type)
          fp= fopen("ouputRR.txt","a");
     
     fprintf(fp,"\n");
-    int n =sizeof(tr)/sizeof(int);
-    for(int i = 0; i <= n;i++)
+    for(int i = 0; i < datasize;i++)
         fprintf(fp,"Turnaround time of Process %d: %d\n",i,tr[i]);
     fprintf(fp,"\n");
     fclose(fp);
