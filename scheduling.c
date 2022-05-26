@@ -147,7 +147,7 @@ void FCFS()
                      temp = QueueOut(&ready);}
                 P_time = 0;               
             }
-            if(running.top->cpu == 0)
+            if(!IsEmpty(&running) && running.top->cpu == 0)
             {
                 tempn = blocked.top;
                 for(int i = 0;i< blocked.size;i++)
@@ -239,11 +239,11 @@ void RR(int quantum)
                      temp = QueueOut(&ready);}
                                
             }
-            if(running.top->cpu == 0)
-            {   
+            //if(running.top->cpu == 0)
+            //{   
                 
-                continue;
-            }
+                //continue;
+            //}
 
         }
         if(data.size == 0 && IsEmpty(&ready) && IsEmpty(&running) && IsEmpty(&blocked)){
