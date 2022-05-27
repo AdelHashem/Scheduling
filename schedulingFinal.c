@@ -261,7 +261,7 @@ void RR(int quantum)
             priflag = 1;
         }
         //see block q
-        while(!IsEmpty(&blocked) && priorityOut(&blocked) == 0)
+        /*while(!IsEmpty(&blocked) && priorityOut(&blocked) == 0)
         {
             int cputemp = blocked.top->cpu;
             if(cputemp !=0){
@@ -277,7 +277,7 @@ void RR(int quantum)
                 tr[blocked.top->data] = cycle - blocked.top->time;
             }
             temp = QueueOut(&blocked);
-        }
+        }*/
 
         // for running
 
@@ -296,7 +296,7 @@ void RR(int quantum)
                     temp = QueueOut(&running);
                 }else //i/o blocking
                 {
-                    QueueIn(&blocked,running.top->data,running.top->cpu,running.top->io+1,running.top->io+1,running.top->time);
+                    QueueIn(&blocked,running.top->data,running.top->cpu,running.top->io,running.top->io,running.top->time);
                     p_time[running.top->data] = 0;
                     temp = QueueOut(&running);
                 }
@@ -312,6 +312,8 @@ void RR(int quantum)
             if(!IsEmpty(&running)){
                 p_time[running.top->data] ++;
                 printf("cycle : %d Runing : %d\n",cycle,running.top->data);
+                if(running.top->cpu == p_time[running.top->data])
+                    counter = quantum;
             }
             
 
