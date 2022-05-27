@@ -133,23 +133,22 @@ void FCFS()
         // push p when its time comes
         while(!IsEmpty(&data) && priorityOut(&data) == cycle)
         {
+            if(data.top->cpu !=0){
             QueueIn(&ready,data.top->data,data.top->cpu,data.top->io,0,data.top->time);
             temp = QueueOut(&data);
             temoq = data;
+            }
+            else
+            {
+                QueueIn(&blocked,data.top->data,data.top->cpu,data.top->io,data.top->io,data.top->time);
+                temp = QueueOut(&data);
+                temoq = data;
+            }
         }
         // Process the blocking Q
-        Qnode *tempn = blocked.top;
-        for(int i = 0;i< blocked.size;i++)
-        {
-            tempn->io --;
-            tempn->priority --;
-            tempn = tempn->next;
-        }
-        while(!IsEmpty(&blocked) && priorityOut(&blocked) == 0)
-        {
-            QueueIn(&ready,blocked.top->data,blocked.top->cpu,-1,0,blocked.top->time);
-            temp = QueueOut(&blocked);
-        }
+        Queue blockedBefore = blocked; //to output blocked Q correctly
+        
+        
         ////////
 
         // Deal with running P
@@ -176,19 +175,7 @@ void FCFS()
                      temp = QueueOut(&ready);}
                 P_time = 0;               
             }
-            if(!IsEmpty(&running) && running.top->cpu == 0)
-            {
-                tempn = blocked.top;
-                for(int i = 0;i< blocked.size;i++)
-                {
-                    tempn->io ++;
-                    tempn->priority ++;
-                    tempn = tempn->next;
-                }
-                P_time = -1;
-                
-                continue;
-            }
+            
 
         }
         if(data.size == 0 && IsEmpty(&ready) && IsEmpty(&running) && IsEmpty(&blocked)){
@@ -196,7 +183,31 @@ void FCFS()
             finish = cycle;
             break;
         }
+        Qnode *tempn = blocked.top;
+        for(int i = 0;i< blocked.size;i++)
+        {
+            tempn->io --;
+            tempn->priority --;
+            tempn = tempn->next;
+        }
+
         output(cycle,&running,&ready,&blocked,0);
+        while(!IsEmpty(&blocked) && priorityOut(&blocked) == 0)
+        {
+            int cputemp = blocked.top->cpu;
+            if(cputemp !=0){
+            QueueIn(&ready,blocked.top->data,blocked.top->cpu,-1,0,blocked.top->time);
+            }
+            else
+            {
+                tr[blocked.top->data] = cycle - blocked.top->time;
+            }
+            temp = QueueOut(&blocked);
+        }
+
+
+
+
         if(!IsEmpty(&running))
             printf("%d cycle :%d ",running.top->data,cycle);
 
@@ -223,26 +234,39 @@ void RR(int quantum)
         counter = 0;
         while (counter < quantum)
         {
+            int pri = 0;
             // push p when its time comes
         while(!IsEmpty(&data) && priorityOut(&data) == cycle)
         {
-            QueueIn(&ready,data.top->data,data.top->cpu,data.top->io,0,data.top->time);
+            if(data.top->cpu !=0){
+                
+                if(!IsEmpty(&ready))
+                    pri = ready.top->priority;
+            QueueIn(&ready,data.top->data,data.top->cpu,data.top->io,pri,data.top->time);
             temp = QueueOut(&data);
+            }
+            else
+            {
+                QueueIn(&blocked,data.top->data,data.top->cpu,data.top->io,data.top->io,data.top->time);
+                temp = QueueOut(&data);
+            }
         }
-        // Process the blocking Q
-        Qnode *tempn = blocked.top;
-        for(int i = 0;i< blocked.size;i++)
-        {
-            tempn->io --;
-            tempn->priority --;
-            tempn = tempn->next;
-        }
+        //see block q
         while(!IsEmpty(&blocked) && priorityOut(&blocked) == 0)
         {
-            QueueIn(&ready,blocked.top->data,blocked.top->cpu,-1,0,blocked.top->time);
+            int cputemp = blocked.top->cpu;
+            if(cputemp !=0){
+                pri = 0;
+                if(!IsEmpty(&ready))
+                    pri = ready.top->priority;
+            QueueIn(&ready,blocked.top->data,blocked.top->cpu,-1,pri,blocked.top->time);
+            }
+            else
+            {
+                tr[blocked.top->data] = cycle - blocked.top->time;
+            }
             temp = QueueOut(&blocked);
         }
-        ////////
 
         // for running
 
@@ -265,26 +289,13 @@ void RR(int quantum)
                     p_time[running.top->data] = 0;
                     temp = QueueOut(&running);
                 }
-                if(!IsEmpty(&ready))
-                    {QueueIn(&running,ready.top->data,ready.top->cpu,ready.top->io,0,ready.top->time);
-                    counter = 0;
-                     temp = QueueOut(&ready);}
+                //if(!IsEmpty(&ready))
+                    //{QueueIn(&running,ready.top->data,ready.top->cpu,ready.top->io,0,ready.top->time);
+                    //counter = 0;
+                     //temp = QueueOut(&ready);}
                                
             }
 
-            if(!IsEmpty(&running) && running.top->cpu == 0)
-            {
-                tempn = blocked.top;
-                for(int i = 0;i< blocked.size;i++)
-                {
-                    tempn->io ++;
-                    tempn->priority ++;
-                    tempn = tempn->next;
-                }
-                p_time[running.top->data] = 0;
-                
-                continue;
-            }
 
         }
         if(data.size == 0 && IsEmpty(&ready) && IsEmpty(&running) && IsEmpty(&blocked)){
@@ -296,13 +307,47 @@ void RR(int quantum)
                 p_time[running.top->data] ++;
                 printf("cycle : %d Runing : %d\n",cycle,running.top->data);
             }
-            output(cycle,&running,&ready,&blocked,1);
-                
+            
+
+        // Process the blocking Q
+        Qnode *tempn = blocked.top;
+        for(int i = 0;i< blocked.size;i++)
+        {
+            tempn->io --;
+            tempn->priority --;
+            tempn = tempn->next;
+        }
+        
+        ////////
+        
+            
+            output(cycle,&running,&ready,&blocked,1);    
+
+            while(!IsEmpty(&blocked) && priorityOut(&blocked) == 0)
+        {
+            int cputemp = blocked.top->cpu;
+            if(cputemp !=0){
+                pri = 0;
+                if(!IsEmpty(&ready))
+                    pri = ready.top->priority;
+            QueueIn(&ready,blocked.top->data,blocked.top->cpu,-1,pri,blocked.top->time);
+            }
+            else
+            {
+                tr[blocked.top->data] = cycle - blocked.top->time;
+            }
+            temp = QueueOut(&blocked);
+        }
+
+
+
             counter ++;
+            if(IsEmpty(&running))
+                counter=0;
             cycle ++;
             
         }
-     
+
 
 
         if(!IsEmpty(&running)){
@@ -316,7 +361,7 @@ void RR(int quantum)
                     temp = QueueOut(&running);
                 }else //i/o blocking
                 {
-                    QueueIn(&blocked,running.top->data,running.top->cpu,running.top->io + 1,running.top->io + 1,running.top->time);
+                    QueueIn(&blocked,running.top->data,running.top->cpu,running.top->io,running.top->io,running.top->time);
                     p_time[running.top->data] = 0;
                     temp = QueueOut(&running);
                 }
@@ -324,7 +369,7 @@ void RR(int quantum)
             else{
                 if (!IsEmpty(&ready))
                 {
-                    QueueIn(&running,ready.top->data,ready.top->cpu,ready.top->io,i,ready.top->time);
+                    QueueIn(&running,ready.top->data,ready.top->cpu,ready.top->io,++i,ready.top->time);
                     temp = QueueOut(&ready);
                 }               
                 QueueIn(&ready,running.top->data,running.top->cpu,running.top->io,i,running.top->time);
@@ -440,6 +485,8 @@ while(temp->next != NULL && pri > temp->next->priority)
 temp=temp->next;
 
 }
+while (temp->next != NULL && pri == temp->next->priority && ndata> temp->next->data)
+    temp=temp->next;
 newn->next = temp->next;
 temp->next =newn;
 q->size++;
